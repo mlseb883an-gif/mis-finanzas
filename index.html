@@ -676,8 +676,9 @@ function estadosPorPagoMes(cardId, pagoMes){
 }
 function consumosSinFacturar(cardId){
   const card=tarjetas().find(t=>t.id===cardId); const lc=ultimoCorte(cardId)||'0000';
+  const ids=[cardId, ...tarjetas().filter(t=>t.cargaA===cardId).map(t=>t.id)];
   const out=[]; Object.values(months).forEach(m=>(m.registros||[]).forEach(r=>{
-    if(r.tipo==='consumo' && r.medio===cardId && r.fecha && r.fecha>lc && catById(r.categoria)?.grupo!=='deuda') out.push({...r, ...cicloDe(card, r.fecha)}); }));
+    if(r.tipo==='consumo' && ids.includes(r.medio) && r.fecha && r.fecha>lc && catById(r.categoria)?.grupo!=='deuda') out.push({...r, ...cicloDe(card, r.fecha)}); }));
   return out;
 }
 const hoyISO = () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
@@ -690,7 +691,7 @@ function viewPorPagar(){
   const app=(cfg.deudaApp||{})[pagoSel]||{};
   const crono=(cfg.cronogramaTarjetas||{})[pagoSel]||{};
   let T={emit:0,cons:0,dif:0,est:0,app:0,real:0};
-  const rows=tarjetas().map(t=>{
+  const rows=tarjetas().filter(t=>!t.cargaA).map(t=>{
     const est=estadosPorPagoMes(t.id,pagoSel);
     const emitido = est.length? sum(est,e=>e.total) : null;
     const pagado = sum(est,e=>e.pagado||0);
@@ -712,7 +713,7 @@ function viewPorPagar(){
       <td class="r num">${diff===null?'—':`<span style="color:${Math.abs(diff)<1?'var(--good)':'var(--warn)'}">${diff>0?'+':''}${money(diff)}</span>`}</td>
       <td class="r num">${money(pend)}</td></tr>`;
   }).join('');
-  const lista = tarjetas().flatMap(t=>consumosSinFacturar(t.id).filter(r=>r.pagoMes===pagoSel).map(r=>({...r,card:t.nombre}))).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const lista = tarjetas().filter(t=>!t.cargaA).flatMap(t=>consumosSinFacturar(t.id).filter(r=>r.pagoMes===pagoSel).map(r=>({...r,card:t.nombre}))).sort((a,b)=>a.fecha.localeCompare(b.fecha));
   return `<section class="panel"><div class="row" style="justify-content:space-between"><h2>Lo que debe pagar en ${mesLabel(pagoSel)}</h2>
     <div class="months">${opciones.map(o=>`<button class="chip" type="button" data-pagomes="${o}" aria-pressed="${o===pagoSel}">Pago ${mesCorto(o)}</button>`).join('')}</div></div>
     <div class="tablewrap"><table><thead><tr><th>Tarjeta</th><th>Fecha máx. pago</th><th class="r">Estado de cuenta emitido</th><th class="r">Consumos anotados sin facturar</th><th class="r">Cuotas de diferidos</th><th class="r">Total estimado</th><th class="r">Según app del banco</th><th class="r">Diferencia</th><th class="r">Falta pagar</th></tr></thead>
@@ -812,7 +813,7 @@ function prestamoEstado(p){
   return {activo, saldo: saldo===null?null:Math.round(saldo*100)/100, pagadas, faltan, fin, pagos, conf, desemb};
 }
 function deudaActual(){
-  const T=tarjetas().map(t=>({t,...deudaTarjeta(t.id)}));
+  const T=tarjetas().filter(t=>!t.cargaA).map(t=>({t,...deudaTarjeta(t.id)}));
   const P=(cfg.prestamos||[]).map(p=>({p,...prestamoEstado(p)}));
   const tt=sum(T,x=>x.total); const act=P.filter(x=>x.activo);
   const tp=sum(act.filter(x=>x.saldo!==null),x=>x.saldo); const falt=act.filter(x=>x.saldo===null).map(x=>x.p.nombre);
@@ -1306,7 +1307,7 @@ const EMO={super:'🛒',gas:'⛽',farmacia:'💊',seguros:'🛡️',restaurantes
 const FEMO={sueldo:'💼',fondos:'🏦',nexo:'🚀',inversiones:'📈',otro:'✨'};
 const PEMO={produbanco:'🚗',produbanco_adm:'📋',austro:'🏛️',familia:'👨‍👩‍👦',familia2:'👨‍👩‍👦',familia3:'👨‍👩‍👦',familia4:'👨‍👩‍👦'};
 const MEMO={fondo:'🛟',macbook:'💻',inversion:'📈',vestimenta:'👕'};
-const CARDC={TVISA:['#9AA5B8','#5B6578'],DISC:['#F08A2C','#B85A0C'],TMC:['#4A505A','#1F2329'],DINERS:['#2D4F8C','#13284D'],AMEX:['#3D86C6','#1C5689'],AUSTRO:['#2F6FC0','#0B3A78']};
+const CARDC={TVISA:['#9AA5B8','#5B6578'],DISC:['#F08A2C','#B85A0C'],TMC:['#4A505A','#1F2329'],DINERS:['#2D4F8C','#13284D'],AMEX:['#3D86C6','#1C5689'],AUSTRO:['#2F6FC0','#0B3A78'],GASCLUB:['#E8700A','#9A3D05']};
 const GRUPO_NOM={esencial:'Esenciales',personal:'Personales',deuda:'Cuotas de diferidos',diferida:'Compras en cuotas',evitable:'Evitables'};
 const emoCat = id => catById(id)?.emoji || EMO[id] || '📦';
 const emoMeta = x => x.emoji || MEMO[x.id] || '🎯';
@@ -1322,7 +1323,7 @@ const icoPrest = p => ico(icoPrestN(p), emoPrest(p));
 const BANK={guayaquil:['BG','#E5007E','#fff'],pichincha:['BP','#F2C200','#1A1A1A'],produbanco:['PB','#00843D','#fff'],austro:['BA','#0B4F9C','#fff'],internacional:['BI','#E8700A','#fff'],efectivo:['billetes','#2A2E36','#fff'],inversiones:['inversiones','#6250d6','#fff']};
 const bankMono = id => { const b=BANK[id]; if(!b) return `<span class="abank" style="background:var(--a-card);color:var(--a-ink2)">${ico('deu-banco','🏦')}</span>`;
   return `<span class="abank" style="background:${b[1]};color:${b[2]}">${ICO[b[0]]?ico(b[0]):b[0]}</span>`; };
-const RED={TVISA:'VISA',AUSTRO:'VISA',TMC:'MC',DISC:'DISC',DINERS:'DC',AMEX:'AMEX'};
+const RED={TVISA:'VISA',AUSTRO:'VISA',TMC:'MC',DISC:'DISC',DINERS:'DC',AMEX:'AMEX',GASCLUB:'DC'};
 const redTarjeta = t => RED[t.id] || (/visa/i.test(t.nombre)?'VISA':/master/i.test(t.nombre)?'MC':/amex|american/i.test(t.nombre)?'AMEX':/discover/i.test(t.nombre)?'DISC':/diners/i.test(t.nombre)?'DC':'');
 const espDe = r => r.espacio || 'personal';
 const PIGGY_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"> <defs> <radialGradient id="pg-bg" cx="50%" cy="35%" r="75%"><stop offset="0" stop-color="#2A2E36"/><stop offset="1" stop-color="#14161A"/></radialGradient> <radialGradient id="pg-body" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#FFC6DA"/><stop offset=".6" stop-color="#F99BBE"/><stop offset="1" stop-color="#E9769F"/></radialGradient> <radialGradient id="pg-snout" cx="45%" cy="40%" r="65%"><stop offset="0" stop-color="#FFB3CC"/><stop offset="1" stop-color="#EE84A9"/></radialGradient> <radialGradient id="pg-coin" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#FFE48A"/><stop offset=".55" stop-color="#F7C53A"/><stop offset="1" stop-color="#D99A12"/></radialGradient> </defs> <rect width="512" height="512" fill="url(#pg-bg)"/> <ellipse cx="256" cy="430" rx="140" ry="16" fill="#000" opacity=".28"/> <rect x="160" y="356" width="50" height="66" rx="22" fill="#E9769F"/> <rect x="300" y="356" width="50" height="66" rx="22" fill="#E9769F"/> <path d="M114 280c-26-4-32 20-16 27 14 6 23-11 7-18" fill="none" stroke="#E9769F" stroke-width="12" stroke-linecap="round"/> <path d="M160 196 138 136c-3-9 6-16 14-11l58 40z" fill="#E9769F"/> <circle cx="256" cy="282" r="148" fill="url(#pg-body)"/> <ellipse cx="200" cy="210" rx="44" ry="26" fill="#fff" opacity=".35" transform="rotate(-25 200 210)"/> <path d="M318 168l34-52c5-7 14-5 15 3l4 70z" fill="#F99BBE"/> <path d="M332 160l20-31c3-4 8-3 9 2l2 38z" fill="#E9769F"/> <rect x="204" y="152" width="80" height="14" rx="7" fill="#C2557D"/> <circle cx="300" cy="248" r="13" fill="#3B1E2B"/><circle cx="304" cy="244" r="4.5" fill="#fff"/> <ellipse cx="292" cy="296" rx="20" ry="12" fill="#F27098" opacity=".45"/> <ellipse cx="370" cy="290" rx="44" ry="36" fill="url(#pg-snout)" stroke="#E46E98" stroke-width="5"/> <ellipse cx="356" cy="290" rx="7" ry="11" fill="#B9466F"/><ellipse cx="384" cy="290" rx="7" ry="11" fill="#B9466F"/> <g transform="translate(244 92) scale(.9)"> <circle r="66" fill="#C98A0A"/> <circle r="60" fill="url(#pg-coin)"/> <circle r="47" fill="none" stroke="#E0A821" stroke-width="5"/> <text x="0" y="4" text-anchor="middle" dominant-baseline="middle" font-family="Nunito, 'Arial Rounded MT Bold', 'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="72" fill="#9C6400">S</text> <ellipse cx="-24" cy="-30" rx="16" ry="8" fill="#fff" opacity=".55" transform="rotate(-35 -24 -30)"/> </g> </svg>`;
@@ -1330,7 +1331,7 @@ const piggy = (px) => PIGGY_SVG.replace('<svg ', `<svg width="${px}" height="${p
 const EMO2ICO={'💻':'cat-tecnologia','📱':'cat-tecnologia','✈️':'cat-viajes','🚗':'deu-auto','👟':'cat-vestimenta','🎁':'meta-recompensa','🏖️':'cat-viajes','🎮':'cat-suscripciones','🎧':'cat-suscripciones','⌚':'cat-tecnologia'};
 const CAT_CORTO={super:'Súper',gas:'Combustible',farmacia:'Salud',seguros:'Seguros y teléfono',restaurantes:'Comida fuera',hogar:'Hogar',viajes:'Viajes',suscripciones:'Suscripciones',vestimenta:'Ropa',tecnologia:'Tecnología',avances:'Avances',cargos:'Cargos',otros:'Otros',diferidos:'Cuotas',compra_diferida:'En cuotas'};
 const circ = (html,color) => `<span class="pk-i" style="color:${color};background:color-mix(in srgb, ${color} 20%, transparent)">${html}</span>`;
-const cardChip = t => { const c=CARDC[t.id]||['#555','#222']; return `<span class="pk-card" style="background:linear-gradient(135deg,${c[0]},${c[1]})">${ico('deu-tarjeta','💳')}</span>`; };
+const cardChip = t => { const c=CARDC[t.id]||['#555','#222']; return `<span class="pk-card" style="background:linear-gradient(135deg,${c[0]},${c[1]})">${ico(t.cargaA||t.id==='GASCLUB'?'cat-gas':'deu-tarjeta','💳')}</span>`; };
 const icoFuente = f => ico(ICO['ing-'+f]?'ing-'+f:(f==='inversiones'&&ICO['inversiones']?'inversiones':null), FEMO[f]||'💰');
 function picker(id, items, sel, fila){ const v0 = items.some(x=>x[0]===sel)? sel : (items[0]||[''])[0];
   return `<input type="hidden" id="${id}" value="${esc(v0)}"><div class="apick${fila?' fila':''}" role="radiogroup">${items.map(([v,l,i])=>`<button type="button" class="pk" role="radio" aria-checked="${v===v0}" data-pick="${id}" data-val="${esc(v)}">${i}<span>${esc(l)}</span></button>`).join('')}</div>`; }
@@ -1428,7 +1429,10 @@ function aInicio(){
       ${V.length? V.map(v=>{ const cls=v.fecha&&v.fecha<hoy?'bad':v.fecha&&v.fecha<=addD(hoy,7)?'warn':'';
         const btn = v.rid? `<button class="abtn sm" type="button" data-atog="${v.rid}">Pagado</button>` : `<button class="abtn sm ghost" type="button" data-apay="${v.tarjeta?'tarjeta:'+v.tarjeta:'prestamo:'+v.prest}" data-monto="${v.monto}">Pagar</button>`;
         return `<div class="apay ${cls}"><span class="adate">${v.fecha?`<b>${v.fecha.slice(8)}</b>${MESES[+v.fecha.slice(5,7)-1].slice(0,3)}`:'<b>—</b>s/f'}</span><span class="amt"><b>${cls==='bad'?ico('est-vencido'):cls==='warn'?ico('est-alerta'):''}${esc(v.que)}</b><span class="sub">${esc(v.det||'')}</span></span><span class="aval">${money(v.monto)}${btn}</span></div>`; }).join('') : `<p class="sub">${ico('est-cumplido')} Nada por pagar en los próximos 30 días.</p>`}</section>
-    <section class="acard"><h2>${ico('deu-tarjeta')}Mis tarjetas</h2><div class="acards">${tarjetas().map(t=>{ const x=deudaTarjeta(t.id); const c=CARDC[t.id]||['#555','#222'];
+    <section class="acard"><h2>${ico('deu-tarjeta')}Mis tarjetas</h2><div class="acards">${tarjetas().map(t=>{ const c=CARDC[t.id]||['#555','#222'];
+        if(t.cargaA){ const lcp=ultimoCorte(t.cargaA)||'0000'; const g=sum(allRegs().filter(r=>r.tipo==='consumo'&&r.medio===t.id&&(r.fecha||'')>lcp),r=>r.monto);
+          return `<div class="ccard" style="background:linear-gradient(135deg,${c[0]},${c[1]})"><span class="ctop"><span class="cn">${ico('cat-gas')} ${esc(t.nombre)}</span><span class="cb">Se cobra con ${esc(medioNombre(t.cargaA))}</span></span><span class="cd">Este ciclo <b>${money(g)}</b></span><span class="cp">Incluido en la deuda de ${esc(medioNombre(t.cargaA))}</span>${redTarjeta(t)?`<span class="cnet">${redTarjeta(t)}</span>`:''}</div>`; }
+        const x=deudaTarjeta(t.id);
         return `<div class="ccard" style="background:linear-gradient(135deg,${c[0]},${c[1]})"><span class="ctop"><span class="cn">${esc(t.nombre)}</span><span class="cb">${esc(t.banco)}</span></span><span class="cd">Debo <b>${money(x.total)}</b></span>${typeof app[t.id]==='number'?`<span class="cp">A pagar el próximo mes: ${money(app[t.id])}</span>`:`<span class="cp">Corte ${t.diaCorte} · pago ${t.diaPago}</span>`}${redTarjeta(t)?`<span class="cnet">${redTarjeta(t)}</span>`:''}</div>`; }).join('')}</div></section>
     <section class="acard"><div class="arow"><h2>${ico('nav-movimientos')}Movimientos recientes</h2><button class="alink" type="button" data-atab="movs">Ver todos</button></div>
       ${recent.length? recent.map(r=>movRow(r)).join('') : '<p class="sub">Aún no hay movimientos este mes.</p>'}</section>`;
@@ -1536,7 +1540,7 @@ function aSheetHtml(){ const t=aSheet; const hoy=hoyISO();
       ingreso:`<div class="af">¿De dónde?${picker('s_fuente', FUENTES.map(([k,n])=>[k,n,circ(icoFuente(k), k==='nexo'?'var(--a-nexo, #1f46ff)':k==='inversiones'?'#9085e9':'var(--a-good)')]), sPre.fuente||(aEsp==='nexo'?'nexo':aEsp==='inversiones'?'inversiones':'sueldo'))}</div>
         <div class="af">Llegó a${picker('s_medio', pkCuentas(), aEsp==='inversiones'?'inversiones':'guayaquil', true)}</div>
         <label class="af">Detalle (opcional)<input id="s_concepto" placeholder="Ej.: factura 001 de Nexo" autocomplete="off"></label>`,
-      pago:`<div class="af">¿Qué pagué?${picker('s_vinc', [...(cfg.prestamos||[]).filter(p=>{ const st=prestamoEstado(p); return st.activo && (st.saldo===null||st.saldo>0); }).map(p=>['prestamo:'+p.id,p.nombre,circ(icoPrest(p),'var(--g-deuda)')]),...tarjetas().map(x=>['tarjeta:'+x.id,x.nombre,cardChip(x)])], sPre.vinc, true)}</div>
+      pago:`<div class="af">¿Qué pagué?${picker('s_vinc', [...(cfg.prestamos||[]).filter(p=>{ const st=prestamoEstado(p); return st.activo && (st.saldo===null||st.saldo>0); }).map(p=>['prestamo:'+p.id,p.nombre,circ(icoPrest(p),'var(--g-deuda)')]),...tarjetas().filter(x=>!x.cargaA).map(x=>['tarjeta:'+x.id,x.nombre,cardChip(x)])], sPre.vinc, true)}</div>
         <div class="af">Desde${picker('s_medio', pkCuentas(), sPre.medio||'guayaquil', true)}</div>`,
       ahorro:`<div class="af">¿Para qué?${picker('s_meta', (cfg.metas||[]).map(x=>[x.id,x.nombre.replace(/^Recompensa: /,''),circ(icoMeta(x),'var(--a-good)')]), sPre.meta, true)}</div>
         <div class="af">Desde${picker('s_medio', pkCuentas(), 'guayaquil', true)}</div>`}[t];
@@ -2008,7 +2012,9 @@ document.addEventListener('click', e=>{
       const R=recompensas().find(x=>x.id===id); cfg.recompensas=recompensas().filter(x=>x.id!==id); if(cfg.recompensa) delete cfg.recompensa;
       if(R && aportesMeta(R.metaId)===0) cfg.metas=(cfg.metas||[]).filter(x=>x.id!==R.metaId); aDelOk=null; render(); saveCfg(); toast('Recompensa eliminada'); return; }
     if((el=q('[data-aexport]'))){ exportData(); return; }
-    if((el=q('[data-pick]'))){ const inp=$(el.dataset.pick); if(inp) inp.value=el.dataset.val; el.parentElement.querySelectorAll('.pk').forEach(b=>b.setAttribute('aria-checked', b===el?'true':'false')); return; }
+    if((el=q('[data-pick]'))){ const inp=$(el.dataset.pick); if(inp) inp.value=el.dataset.val; el.parentElement.querySelectorAll('.pk').forEach(b=>b.setAttribute('aria-checked', b===el?'true':'false'));
+      const tj=tarjetas().find(t=>t.id===el.dataset.val); if(el.dataset.pick==='s_medio' && tj && (tj.cargaA||tj.id==='GASCLUB') && $('s_cat')){ $('s_cat').value='gas'; document.querySelectorAll('[data-pick="s_cat"]').forEach(b=>b.setAttribute('aria-checked', b.dataset.val==='gas'?'true':'false')); }
+      return; }
     if((el=q('[data-recatopen]'))){ sPre={rid:el.dataset.recatopen}; aSheet='recat'; render(); return; }
     if((el=q('[data-recatpick]'))){ const f=findReg(sPre.rid); if(f){ f.r.categoria=el.dataset.recatpick; saveMonth(f.m); } aSheet=null; sPre={}; render(); toast('✅ Categoría cambiada'); return; }
     if((el=q('[data-syncnow]'))){ toast('⏳ Sincronizando…'); syncPull(true); return; }
@@ -2123,7 +2129,8 @@ render();
   try{ window.claude?.use?.('downloads')?.then(f=>{ dlFn=f||null; }).catch(()=>{}); }catch(_){}
   if(!db){ setStatus('Base de datos no disponible en esta vista.'); render(); return; }
   db.doc('ledger/main').onSnapshot(sn=>{ ledger = sn.exists? JSON.parse(JSON.stringify(sn.data())) : {historial:[]}; if(!ledger.historial) ledger.historial=[]; render(); }, err=>setStatus('Conexión interrumpida ('+err.code+').'));
-  db.doc('config/main').onSnapshot(s=>{ cfg = s.exists? JSON.parse(JSON.stringify(s.data())) : null; setStatus(cfg?'Datos sincronizados':'Sin datos todavía'); render(); }, err=>setStatus('Conexión interrumpida ('+err.code+'). Recargue la página.'));
+  db.doc('config/main').onSnapshot(s=>{ cfg = s.exists? JSON.parse(JSON.stringify(s.data())) : null;
+    if(cfg && Array.isArray(cfg.tarjetas) && cfg.tarjetas.some(t=>t.id==='DINERS') && !cfg.tarjetas.some(t=>t.id==='GASCLUB')){ const d=cfg.tarjetas.find(t=>t.id==='DINERS'); cfg.tarjetas.splice(cfg.tarjetas.indexOf(d)+1,0,{id:'GASCLUB', nombre:'Gas Club', banco:'Diners Club', diaCorte:d.diaCorte, diaPago:d.diaPago, cargaA:'DINERS', nota:'Extensión adicional para combustible; se factura en el estado de Diners Club'}); saveCfg(); } setStatus(cfg?'Datos sincronizados':'Sin datos todavía'); render(); }, err=>setStatus('Conexión interrumpida ('+err.code+'). Recargue la página.'));
   db.collection('months').onSnapshot(q=>{
     const next={}; q.docs.forEach(d=>{ next[d.id]=JSON.parse(JSON.stringify(d.data())); });
     months=next; const ids=Object.keys(months).sort();
