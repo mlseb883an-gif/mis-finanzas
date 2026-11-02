@@ -1432,7 +1432,8 @@ function aMas(){
   return `${!enClaude && !standalone?`<section class="acard"><h2>📲 Instalar en el iPhone</h2><p class="sub">En Safari toque <b>Compartir</b> ⬆️ → <b>Agregar a pantalla de inicio</b>. Se abrirá como una app, incluso sin internet.</p></section>`:''}
     ${enClaude && APP_URL.startsWith('http')?`<section class="acard"><h2>📲 App instalable</h2><p class="sub">Ábrala en Safari desde el iPhone y agréguela a la pantalla de inicio: <a href="${APP_URL}" target="_blank" rel="noopener">${APP_URL.replace('https://','')}</a></p></section>`:''}
     <section class="acard"><h2>💾 Mis datos</h2><p class="sub">${enClaude?'Este tablero guarda sus datos en Claude.':'La app guarda sus datos solo en este teléfono. Exporte un respaldo cada semana.'}${lsGet('lastExport')?' Último respaldo: '+dmy(lsGet('lastExport'))+'.':''}</p>
-      <div class="arow" style="justify-content:flex-start;gap:8px"><button class="abtn" type="button" data-aexport="1">⬇️ Exportar respaldo</button><button class="abtn ghost" type="button" data-aimport="1">⬆️ Importar archivo</button></div>
+      <div class="arow" style="justify-content:flex-start;gap:8px"><button class="abtn" type="button" data-aexport="1">⬇️ Exportar respaldo</button><button class="abtn ghost" type="button" data-acopy="1">📋 Copiar código</button><button class="abtn ghost" type="button" data-aopen="pegar">📋 Pegar código</button><button class="abtn ghost" type="button" data-aimport="1">⬆️ Importar archivo</button></div>
+      <p class="sub" style="margin:8px 0 0">"Copiar código" sirve para enviarle sus datos a Claude pegándolos en el chat.</p>
       <input type="file" id="aImport" accept="application/json,.json" hidden></section>
     <section class="acard"><h2>🏦 Mis cuentas</h2><div class="asq">${cuentas().map(k=>{ const s=saldoCuenta(k.id); return `<button type="button" class="aq" data-asaldo="${k.id}"><span>🏦</span><b>${esc(k.nombre)}</b><span class="aval">${s.saldo===null?'—':money(s.saldo)}</span><span class="sub">${s.conf?'al '+dmy(s.conf.fecha):'sin saldo'} · actualizar</span></button>`; }).join('')}</div></section>
     <section class="acard"><h2>📉 Mis deudas <span class="sub">${money(d.total)}</span></h2>
@@ -1474,6 +1475,11 @@ function aSheetHtml(){ const t=aSheet; const hoy=hoyISO();
   } else if(t==='saldo'){
     inner=`<h2>🏦 Actualizar saldo</h2><form id="aSaldoForm" class="aform"><label class="af">Cuenta<select id="as_cta">${opt(ctas, sPre.cta)}</select></label>
       <label class="af big">Saldo real hoy<input id="as_monto" type="number" step="0.01" inputmode="decimal" required></label><button class="abtn wide" type="submit">Guardar saldo</button></form><p class="sub">Use el saldo que le muestra la app del banco.</p>`;
+  } else if(t==='pegar'){
+    inner=`<h2>📋 Pegar código</h2><p class="sub">Copie el código que le envió Claude (empieza con <b>MF1:</b>) y péguelo aquí.</p>
+      <button class="abtn wide" type="button" data-apaste="1">📋 Pegar del portapapeles</button>
+      <label class="af" style="margin-top:12px">O péguelo manualmente<textarea id="apasteTxt" rows="5" style="font:inherit;font-size:14px;color:var(--a-ink);background:var(--a-card2);border:1.5px solid transparent;border-radius:14px;padding:12px;width:100%" placeholder="MF1:..."></textarea></label>
+      <button class="abtn ghost wide" type="button" data-apastego="1" style="margin-top:10px">Continuar</button>`;
   } else if(t==='import' && aImp){
     const n=Object.keys(aImp.docs).filter(k=>k.startsWith('months/')).length; const nr=sum(Object.keys(aImp.docs).filter(k=>k.startsWith('months/')).map(k=>aImp.docs[k]),m=>(m.registros||[]).length);
     inner=`<h2>⬆️ Importar datos</h2><p>Archivo del <b>${aImp.exportado?dmy(aImp.exportado.slice(0,10)):'—'}</b> con ${n} mes(es) y ${nr} movimiento(s).</p><div class="aalert warn"><span>⚠️</span><p>Esto <b>reemplaza</b> todos los datos actuales de ${window.claude?'este tablero':'esta app'}.</p></div>
@@ -1482,7 +1488,7 @@ function aSheetHtml(){ const t=aSheet; const hoy=hoyISO();
   return `<div class="asheetbg" data-aclose="1"></div><div class="asheet" role="dialog" aria-modal="true"><div class="agrab"></div><button class="aclose" type="button" data-aclose="1" aria-label="Cerrar">✕</button>${inner}</div>`;
 }
 function appEmpty(){ return `<main class="amain"><section class="acard ahero" style="margin-top:24px"><span class="abig">👋</span><h2>Bienvenido a Mis finanzas</h2><p class="sub">Importe el archivo de datos que le entregó Claude para empezar.</p>
-  <button class="abtn wide" type="button" data-aimport="1">⬆️ Importar archivo</button><input type="file" id="aImport" accept="application/json,.json" hidden></section></main>${aSheet?aSheetHtml():''}`; }
+  <button class="abtn wide" type="button" data-aopen="pegar">📋 Pegar código de Claude</button><button class="abtn ghost wide" type="button" data-aimport="1" style="margin-top:10px">⬆️ Importar archivo</button><input type="file" id="aImport" accept="application/json,.json" hidden></section></main>${aSheet?aSheetHtml():''}`; }
 function viewApp(){
   if(!cfg) return appEmpty();
   const tabs=[['inicio','🏠','Inicio'],['gastos','📊','Gastos'],['movs','🧾','Movimientos'],['metas','🎯','Metas'],['mas','⚙️','Más']];
@@ -1495,6 +1501,18 @@ function viewApp(){
     <nav class="anav" aria-label="Secciones">${tabs.map(([k,e,n])=>`<button type="button" data-atab="${k}" aria-current="${k===aTab?'page':'false'}"><span>${e}</span>${n}</button>`).join('')}</nav>
     ${aSheet?aSheetHtml():''}`;
 }
+async function codeFromData(obj){ const txt=JSON.stringify(obj,(k,v)=>k.startsWith('_')?undefined:v);
+  const cs=new Blob([txt]).stream().pipeThrough(new CompressionStream('gzip')); const buf=new Uint8Array(await new Response(cs).arrayBuffer());
+  let bin=''; for(let i=0;i<buf.length;i+=0x8000) bin+=String.fromCharCode.apply(null, buf.subarray(i,i+0x8000)); return 'MF1:'+btoa(bin); }
+async function dataFromCode(text){ const m=String(text||'').replace(/\s+/g,'').match(/MF1:([A-Za-z0-9+\/=]+)/); if(!m) throw new Error('sin código');
+  const bin=atob(m[1]); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+  const ds=new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip')); return JSON.parse(await new Response(ds).text()); }
+async function importarTexto(text){ let j=null; try{ j = String(text||'').trim().startsWith('{') ? JSON.parse(text) : await dataFromCode(text); }catch(_){ j=null; }
+  if(!j || j.app!=='mis-finanzas' || !j.docs || !j.docs['config/main']){ toast('El código no es válido. Cópielo completo, desde MF1:'); return false; }
+  aImp=j; aSheet='import'; render(); return true; }
+async function copiarCodigo(){ const docs={'config/main':cfg,'ledger/main':ledger}; Object.entries(months).forEach(([k,v])=>{ docs['months/'+k]=v; });
+  try{ const code=await codeFromData({app:'mis-finanzas', version:1, exportado:new Date().toISOString(), docs}); await navigator.clipboard.writeText(code); lsSet('lastExport',hoyISO()); toast('📋 Código copiado: péguelo en el chat con Claude'); }
+  catch(_){ toast('No se pudo copiar el código en este navegador'); } }
 function exportData(){
   const docs={'config/main':cfg,'ledger/main':ledger}; Object.entries(months).forEach(([k,v])=>{ docs['months/'+k]=v; });
   const data=JSON.stringify({app:'mis-finanzas', version:1, exportado:new Date().toISOString(), docs},(k,v)=>k.startsWith('_')?undefined:v);
@@ -1852,6 +1870,9 @@ document.addEventListener('click', e=>{
       const R=recompensas().find(x=>x.id===id); cfg.recompensas=recompensas().filter(x=>x.id!==id); if(cfg.recompensa) delete cfg.recompensa;
       if(R && aportesMeta(R.metaId)===0) cfg.metas=(cfg.metas||[]).filter(x=>x.id!==R.metaId); aDelOk=null; render(); saveCfg(); toast('Recompensa eliminada'); return; }
     if((el=q('[data-aexport]'))){ exportData(); return; }
+    if((el=q('[data-acopy]'))){ copiarCodigo(); return; }
+    if((el=q('[data-apaste]'))){ (navigator.clipboard && navigator.clipboard.readText ? navigator.clipboard.readText() : Promise.reject()).then(t=>importarTexto(t)).catch(()=>toast('No se pudo leer el portapapeles: péguelo en el recuadro')); return; }
+    if((el=q('[data-apastego]'))){ importarTexto(($('apasteTxt')||{}).value||''); return; }
     if((el=q('[data-aimport]'))){ const i=$('aImport'); if(i) i.click(); return; }
     if((el=q('[data-aimpok]'))){ importData(); return; }
     if((el=q('[data-afull]'))){ modo='completo'; lsSet('modo',modo); render(); window.scrollTo(0,0); return; }
