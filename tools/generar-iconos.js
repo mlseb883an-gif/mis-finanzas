@@ -16,7 +16,7 @@ Object.entries(ICONOS).filter(([k]) => !SOLO_INTERNOS.includes(k)).forEach(([k, 
 const NUNITO = `font-family="Nunito, 'Avenir Next', 'Helvetica Neue', Arial, sans-serif" font-weight="800"`;
 const BANCOS = [
   ['guayaquil', 'BG', '#E5007E', '#fff'], ['pichincha', 'BP', '#F2C200', '#1A1A1A'], ['produbanco', 'PB', '#00843D', '#fff'],
-  ['austro', 'BA', '#C8102E', '#fff'], ['internacional', 'BI', '#E30613', '#fff'],
+  ['austro', 'BA', '#0B4F9C', '#fff'], ['internacional', 'BI', '#E8700A', '#fff'],
 ];
 BANCOS.forEach(([id, t, bg, fg]) => fs.writeFileSync(path.join(DIR, `bank-${id}.svg`),
   `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" rx="10" fill="${bg}"/><text x="20" y="20.5" text-anchor="middle" dominant-baseline="central" font-size="15" letter-spacing="-.3" fill="${fg}" ${NUNITO}>${t}</text></svg>\n`));
@@ -36,7 +36,9 @@ fs.writeFileSync(path.join(DIR, 'nexo-mono.svg'), nexoSvg('currentColor', 'curre
 
 // 5 · Ícono de la app (concepto actual: fondo #14161A, anillo celeste incompleto, $)
 const APP = s => `<g transform="translate(32 32) scale(${s}) translate(-32 -32)" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M32 9.5a22.5 22.5 0 1 0 17.3 8.1" stroke="#7CC4FF" stroke-width="5.5"/><circle cx="49.3" cy="17.6" r="3.6" fill="#7CC4FF"/><path d="M38 24c-1.3-2.2-3.5-3.5-6.2-3.5-3.6 0-6 1.9-6 4.7 0 6.4 12.6 3.4 12.6 9.9 0 3-2.7 5-6.5 5-3 0-5.3-1.3-6.6-3.5M32 17v3.5M32 40.1v3.9" stroke="#ECEEF2" stroke-width="4.5"/></g>`;
-const appSvg = s => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#14161A"/>${APP(s)}</svg>`;
+// Ícono de la app: cerdito de alcancía rosado con moneda dorada (tools/piggy.svg). s<0.8 = versión con margen para máscara.
+const PIGGY = fs.readFileSync(path.join(__dirname, 'piggy.svg'), 'utf8').trim();
+const appSvg = s => s >= 0.8 ? PIGGY : PIGGY.replace(/(<rect width="512" height="512" fill="url\(#bg\)"\/>)/, `$1<g transform="translate(256 256) scale(${s/0.82*0.95}) translate(-256 -256)">`).replace(/<\/svg>$/, '</g></svg>');
 fs.writeFileSync(path.join(DIR, 'app.svg'), appSvg(0.82) + '\n');
 
 // 6 · Bloque ICO dentro de index.html (íconos en línea: heredan currentColor y funcionan sin internet)
@@ -50,7 +52,7 @@ else console.log('index.html: falta el marcador /*ICO:inicio*/ … /*ICO:fin*/')
 // 6b · Service worker: caché nueva con los archivos de /icons
 const swP = path.join(RAIZ, 'sw.js'); let sw = fs.readFileSync(swP, 'utf8');
 const lista = fs.readdirSync(DIR).filter(f => /\.(svg|png)$/.test(f)).sort().map(f => `'icons/${f}'`);
-sw = sw.replace(/const C='mis-finanzas-v\d+';/, "const C='mis-finanzas-v2';")
+sw = sw.replace(/const C='mis-finanzas-v\d+';/, "const C='mis-finanzas-v3';")
   .replace(/const CORE=\[[^\]]*\];/, `const CORE=['./','index.html','manifest.webmanifest','icon-192.png','icon-512.png','icon-maskable.png','apple-touch-icon.png',${lista.join(',')}];`);
 fs.writeFileSync(swP, sw);
 

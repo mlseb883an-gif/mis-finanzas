@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="75%"><stop offset="0" stop-color="#2A2E36"/><stop offset="1" stop-color="#14161A"/></radialGradient>
+    <radialGradient id="body" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#FFC6DA"/><stop offset=".6" stop-color="#F99BBE"/><stop offset="1" stop-color="#E9769F"/></radialGradient>
+    <radialGradient id="snout" cx="45%" cy="40%" r="65%"><stop offset="0" stop-color="#FFB3CC"/><stop offset="1" stop-color="#EE84A9"/></radialGradient>
+    <radialGradient id="coin" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#FFE48A"/><stop offset=".55" stop-color="#F7C53A"/><stop offset="1" stop-color="#D99A12"/></radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- sombra -->
+  <ellipse cx="256" cy="430" rx="140" ry="16" fill="#000" opacity=".28"/>
+  <!-- patas -->
+  <rect x="160" y="356" width="50" height="66" rx="22" fill="#E9769F"/>
+  <rect x="300" y="356" width="50" height="66" rx="22" fill="#E9769F"/>
+  <!-- cola rizada -->
+  <path d="M114 280c-26-4-32 20-16 27 14 6 23-11 7-18" fill="none" stroke="#E9769F" stroke-width="12" stroke-linecap="round"/>
+  <!-- oreja trasera -->
+  <path d="M160 196 138 136c-3-9 6-16 14-11l58 40z" fill="#E9769F"/>
+  <!-- cuerpo -->
+  <circle cx="256" cy="282" r="148" fill="url(#body)"/>
+  <!-- brillo -->
+  <ellipse cx="200" cy="210" rx="44" ry="26" fill="#fff" opacity=".35" transform="rotate(-25 200 210)"/>
+  <!-- oreja delantera -->
+  <path d="M318 168l34-52c5-7 14-5 15 3l4 70z" fill="#F99BBE"/>
+  <path d="M332 160l20-31c3-4 8-3 9 2l2 38z" fill="#E9769F"/>
+  <!-- ranura -->
+  <rect x="204" y="152" width="80" height="14" rx="7" fill="#C2557D"/>
+  <!-- ojo -->
+  <circle cx="300" cy="248" r="13" fill="#3B1E2B"/><circle cx="304" cy="244" r="4.5" fill="#fff"/>
+  <!-- mejilla -->
+  <ellipse cx="292" cy="296" rx="20" ry="12" fill="#F27098" opacity=".45"/>
+  <!-- hocico -->
+  <ellipse cx="370" cy="290" rx="44" ry="36" fill="url(#snout)" stroke="#E46E98" stroke-width="5"/>
+  <ellipse cx="356" cy="290" rx="7" ry="11" fill="#B9466F"/><ellipse cx="384" cy="290" rx="7" ry="11" fill="#B9466F"/>
+  <!-- moneda -->
+  <g transform="translate(244 92) scale(.9)">
+    <circle r="66" fill="#C98A0A"/>
+    <circle r="60" fill="url(#coin)"/>
+    <circle r="47" fill="none" stroke="#E0A821" stroke-width="5"/>
+    <text x="0" y="4" text-anchor="middle" dominant-baseline="middle" font-family="Nunito, 'Arial Rounded MT Bold', 'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="72" fill="#9C6400">S</text>
+    <ellipse cx="-24" cy="-30" rx="16" ry="8" fill="#fff" opacity=".55" transform="rotate(-35 -24 -30)"/>
+  </g>
+</svg>
