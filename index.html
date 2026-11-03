@@ -704,7 +704,7 @@ function viewPorPagar(){
     const estim = emitido!==null ? emitido : cons+dif;
     const a = app[t.id];
     const diff = typeof a==='number' ? a-estim : null;
-    const pend = emitido!==null ? Math.max(0,emitido-pagado) : estim;
+    const pend = emitido!==null ? Math.max(0,emitido-pagado) : Math.max(0, Math.round(((typeof a==='number'?a:estim)-pagadoFactura(t.id,pagoSel))*100)/100);
     T.emit+=emitido||0; T.cons+=cons; T.dif+=dif; T.est+=estim; T.app+= typeof a==='number'?a:0; T.real+=pend;
     const fpago = `${pagoSel}-${String(t.diaPago).padStart(2,'0')}`;
     return `<tr><td><b>${esc(t.nombre)}</b><div class="note">${esc(t.banco)} · corte ${t.diaCorte} · pago ${t.diaPago}</div></td>
@@ -800,10 +800,16 @@ function deudaTarjeta(id){ const L=estadosTodos().filter(x=>x.e.tarjeta===id).so
   const pagosL=sum(allRegs().filter(r=>r.tipo==='pago'&&r.estado==='hecho'&&r.vinculo&&r.vinculo.tipo==='tarjeta'&&r.vinculo.id===id&&!r.aplicado&&((r.fecha||(r.hechoTs||'').slice(0,10))>lc)), r=>r.monto);
   const sinF0=sum(norm, r=>r.monto), sinF=Math.max(0, Math.round((sinF0-pagosL)*100)/100), difL=Math.max(0, Math.round((dif-Math.max(0,pagosL-sinF0))*100)/100);
   return {pend:pend0, dif:difL, sinF, total:pend0+difL+sinF, last:last?last.e:null, conf:null}; }
+// Pagos de tarjeta que corresponden a la factura de un mes. Los pagos anotados antes de existir la opción "Pago de la factura del mes"
+// (sin aplicaA) cuentan para la primera factura cargada en el mismo mes del pago o en el siguiente.
+function mesFacturaLegado(id, fecha){ const app=cfg.deudaApp||{}, f=(fecha||'').slice(0,7); if(!f) return null;
+  return [f, addM(f,1)].find(k=>app[k] && typeof app[k][id]==='number' && app[k][id]>0) || null; }
+function pagadoFactura(id, mes){ return sum(allRegs().filter(r=>r.tipo==='pago'&&r.estado==='hecho'&&r.vinculo&&r.vinculo.tipo==='tarjeta'&&r.vinculo.id===id&&
+  (r.aplicaA ? r.aplicaA===mes : (!r.aplicado && mesFacturaLegado(id, r.fecha||(r.hechoTs||'').slice(0,10))===mes))), r=>r.monto); }
 // Lo que falta pagar de la próxima factura de una tarjeta, según el monto de la app del banco y los pagos marcados para ese mes
 function aPagarTarjeta(id){ const app=cfg.deudaApp||{}, hoyM=hoyISO().slice(0,7);
   const meses=Object.keys(app).filter(k=>k>=hoyM && app[k] && typeof app[k][id]==='number').sort(); if(!meses.length) return null;
-  const pag=mes=>sum(allRegs().filter(r=>r.tipo==='pago'&&r.estado==='hecho'&&r.vinculo&&r.vinculo.tipo==='tarjeta'&&r.vinculo.id===id&&r.aplicaA===mes), r=>r.monto);
+  const pag=mes=>pagadoFactura(id,mes);
   for(const mes of meses){ const total=app[mes][id], p=pag(mes); if(total-p>0.005) return {mes, total, pagado:p, falta:Math.round((total-p)*100)/100}; }
   const mes=meses[meses.length-1], total=app[mes][id], p=pag(mes); return {mes, total, pagado:p, falta:Math.max(0,Math.round((total-p)*100)/100)}; }
 function proximoMesCuota(p){ const h=hoyISO().slice(0,7); if(p.primeraCuota && p.primeraCuota>h) return p.primeraCuota; const d=+hoyISO().slice(8); return (p.diaPago && d>p.diaPago)? addM(h,1) : h; }
@@ -853,7 +859,8 @@ function revertir(r){ const a=r.aplicado; if(!a) return null; const m=months[a.m
   else e.abonoDiferidos=Math.max(0,Math.round(((e.abonoDiferidos||0)-a.monto)*100)/100);
   return m; }
 function setHecho(r, m, hecho){ const t=new Set([m]);
-  if(hecho && r.estado!=='hecho'){ r.estado='hecho'; r.hechoTs=nowTs(); const x=aplicar(r); if(x) t.add(x); }
+  if(hecho && r.estado!=='hecho'){ if(r.tipo==='pago'&&r.vinculo&&r.vinculo.tipo==='tarjeta'&&!r.aplicaA){ const ap=aPagarTarjeta(r.vinculo.id); if(ap&&ap.falta>0.005) r.aplicaA=ap.mes; }
+    r.estado='hecho'; r.hechoTs=nowTs(); const x=aplicar(r); if(x) t.add(x); }
   else if(!hecho && r.estado==='hecho'){ r.estado='pendiente'; delete r.hechoTs; const x=revertir(r); if(x) t.add(x); }
   return t; }
 const saveSet = set => set.forEach(mm=>saveMonth(mm));
