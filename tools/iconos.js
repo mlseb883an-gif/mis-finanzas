@@ -32,6 +32,7 @@ const ICONOS = {
   // ---------- Ingresos
   'ing-sueldo': '<rect x="2.5" y="7" width="19" height="13.5" rx="4.8"/><path d="M8.5 7V6a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v1"/><path class="a" d="M2.5 12.5c3 1.5 6 2 9.5 2s6.5-.5 9.5-2"/>',
   'ing-fondos': '<path d="M14.5 11.2c-.6-2.8-3.2-4.7-6.3-4.7C4.6 6.5 2 8.9 2 12c0 1.8.9 3.3 2.3 4.4V19a1 1 0 0 0 1 1h1.4a1 1 0 0 0 1-1v-1.1c.6.1 1.2.1 1.8 0"/><path d="M18 12.5l-3.2 1.3v2.2c0 2.1 1.4 3.6 3.2 4.5 1.8-.9 3.2-2.4 3.2-4.5v-2.2z"/><path class="a" d="M6.5 9.3h3"/>',
+  'ing-matchlab': '<circle cx="12" cy="12" r="9"/><path d="M12 8.3l3.5 2.5-1.3 4.1H9.8l-1.3-4.1z"/><path class="a" d="M12 3v5.3M15.5 10.8l5-1.6M14.2 14.9l3.1 4.3M9.8 14.9l-3.1 4.3M8.5 10.8l-5-1.6"/>',
   'ing-nexo': '<path d="M6 18V6l12 12V6"/><circle cx="18" cy="6" r="1.9" fill="currentColor"/>',
   'ing-otro': '<path d="M11 3.5c.5 4.3 2.7 6.5 7 7-4.3.5-6.5 2.7-7 7-.5-4.3-2.7-6.5-7-7 4.3-.5 6.5-2.7 7-7z"/><path class="a" d="M19 16.5v4M17 18.5h4"/>',
   // ---------- Deudas
@@ -81,6 +82,8 @@ const ICONOS = {
 ICONOS['ing-inversiones'] = ICONOS['inversiones'];
 ICONOS['esp-inversiones'] = ICONOS['inversiones'];
 ICONOS['esp-nexo'] = ICONOS['ing-nexo'];
+ICONOS['esp-matchlab'] = ICONOS['ing-matchlab'];
+ICONOS['cat-apuestas'] = ICONOS['ing-matchlab'];
 
 // Alternativas para elegir (comida y racha)
 const ALTERNATIVAS = {

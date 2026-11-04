@@ -52,7 +52,7 @@ else console.log('index.html: falta el marcador /*ICO:inicio*/ … /*ICO:fin*/')
 // 6b · Service worker: caché nueva con los archivos de /icons
 const swP = path.join(RAIZ, 'sw.js'); let sw = fs.readFileSync(swP, 'utf8');
 const lista = fs.readdirSync(DIR).filter(f => /\.(svg|png)$/.test(f)).sort().map(f => `'icons/${f}'`);
-sw = sw.replace(/const C='mis-finanzas-v\d+';/, "const C='mis-finanzas-v6';")
+sw = sw.replace(/const C='mis-finanzas-v\d+';/, "const C='mis-finanzas-v7';")
   .replace(/const CORE=\[[^\]]*\];/, `const CORE=['./','index.html','manifest.webmanifest','icon-192.png','icon-512.png','icon-maskable.png','apple-touch-icon.png',${lista.join(',')}];`);
 fs.writeFileSync(swP, sw);
 
